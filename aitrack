@@ -1,0 +1,31 @@
+import streamlit as st
+from openai import OpenAI
+client = OpenAI()
+
+st.set_page_config(page_title="Vacature Buddy", page_icon="🤝", layout="centered")
+
+st.title("🤝 Vacature Buddy")
+st.write("Ik leg een vacature voor je uit in **makkelijke taal (B1/A2)**. Plak hieronder een vacaturetekst.")
+
+# Text input
+vacature = st.text_area("Plak hier de vacaturetekst:", height=250)
+
+if st.button("Leg uit in makkelijke taal"):
+    if not vacature.strip():
+        st.warning("Plak eerst een vacaturetekst.")
+    else:
+        system_prompt = """
+Je bent “Vacature Buddy”, een hulp voor mensen met een licht verstandelijke beperking (LVB).
+Regels:
+- Schrijf in B1/A2, korte zinnen.
+- Geen moeilijke woorden tenzij je ze uitlegt.
+- Gebruik maximaal 5 bullets per sectie.
+- Always output the sections: 
+  'Wat ga je doen', 
+  'Wanneer en waar', 
+  'Wat moet je kunnen', 
+  'Moeilijke woorden uitgelegd'.
+- Wees vriendelijk en duidelijk.
+"""
+        user_prompt = f"""
+Dit is de vacaturetekst. Maak hem begrijpelijk:
