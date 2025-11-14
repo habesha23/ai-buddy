@@ -5,128 +5,323 @@ client = OpenAI()
 
 st.set_page_config(page_title="AI Coach Buddy", page_icon="🤝", layout="centered")
 
+# Zorg dat profiel in session_state staat
+if "profiel" not in st.session_state:
+    st.session_state["profiel"] = ""
+
 st.title("🤝 AI Coach Buddy")
-st.write("Ik help je vacatures begrijpen, moeilijke woorden uitleggen en kleine stappen zetten.")
+st.caption("Ik help je vacatures begrijpen, jouw profiel ontdekken en kleine stappen zetten.")
 
-vacature = st.text_area("Plak hier de vacaturetekst:", height=250)
 
-# 1 — Vacature uitleg in makkelijke taal
-if st.button("1️⃣ Uitleg in makkelijke taal"):
-    if not vacature.strip():
-        st.warning("Plak eerst een vacaturetekst.")
-    else:
-        with st.spinner("Ik leg het simpel uit..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": """
-Je bent AI Coach Buddy voor LVB.
-Schrijf altijd in B1/A2 niveau.
-Korte zinnen. Bullets. Rustige toon.
-Leg moeilijke woorden uit.
-"""},
-                    {"role": "user", "content": f"Leg deze vacature uit in simpele taal:\n\n{vacature}"}
+# ---------------------------
+# TABS
+# ---------------------------
+tab_profiel, tab_vacature = st.tabs(["🧍 Jouw profiel", "📄 Vacature coach"])
+
+
+# ---------------------------
+# TAB 1: JOUW PROFIEL
+# ---------------------------
+with tab_profiel:
+    st.subheader("🧍 Jouw profiel")
+    st.write(
+        "Kies wat bij jou past. Dit helpt mij om beter advies te geven over vacatures. "
+        "Je antwoorden worden alleen in deze app gebruikt."
+    )
+
+    st.markdown("### 💪 Wat kan jij goed?")
+    opties_sterk = [
+        "Ik werk graag met mijn handen",
+        "Ik kan goed doorwerken",
+        "Ik ben rustig",
+        "Ik ben sociaal (ik praat makkelijk met mensen)",
+        "Ik kan goed herhaaltaken doen",
+        "Ik hou van duidelijke regels",
+        "Ik ben fysiek sterk",
+        "Ik werk graag in een vast ritme",
+    ]
+    sterke_punten = st.multiselect("Kies je sterke punten:", opties_sterk)
+
+    st.markdown("### 🙂 Wat vind jij leuk om te doen?")
+    opties_leuk = [
+        "Buiten werken",
+        "Binnen werken",
+        "In een magazijn / met dozen",
+        "Met schoonmaken / opruimen",
+        "Met koken / in de keuken",
+        "Met techniek / gereedschap",
+        "Met mensen helpen",
+        "Met dieren werken",
+    ]
+    leuk_om_te_doen = st.multiselect("Kies wat je leuk vindt:", opties_leuk)
+
+    st.markdown("### 🧩 Waar heb jij hulp bij nodig?")
+    opties_hulp = [
+        "Lange teksten lezen",
+        "Snel werken",
+        "Drukke plekken",
+        "Rekenen",
+        "Nieuwe situaties",
+        "Veel praten in 1 keer",
+    ]
+    hulp_nodig_bij = st.multiselect("Kies wat je lastig vindt:", opties_hulp)
+
+    st.markdown("### 🏢 Welke werkplek past bij jou?")
+    opties_plek = [
+        "Rustige werkplek",
+        "Duidelijke uitleg",
+        "Vaste taken",
+        "Begeleiding op werk",
+        "Klein team",
+        "Groot team",
+    ]
+    fijne_plek = st.multiselect("Kies wat jij fijn vindt op werk:", opties_plek)
+
+    if st.button("💾 Profiel opslaan"):
+        profiel_tekst = "Sterke punten: " + (", ".join(sterke_punten) or "Geen gekozen") + "\n"
+        profiel_tekst += "Leuk om te doen: " + (", ".join(leuk_om_te_doen) or "Geen gekozen") + "\n"
+        profiel_tekst += "Hulp nodig bij: " + (", ".join(hulp_nodig_bij) or "Geen gekozen") + "\n"
+        profiel_tekst += "Fijne werkplek: " + (", ".join(fijne_plek) or "Geen gekozen")
+
+        st.session_state["profiel"] = profiel_tekst
+        st.success("Je profiel is opgeslagen. Ik gebruik dit in mijn advies bij vacatures. ✅")
+
+    if st.session_state["profiel"]:
+        st.markdown("#### 📄 Samenvatting van jouw profiel")
+        st.text(st.session_state["profiel"])
+
+
+# ---------------------------
+# TAB 2: VACATURE COACH
+# ---------------------------
+with tab_vacature:
+    st.subheader("📄 Vacature coach")
+    st.write("Plak hieronder een vacature. Ik gebruik jouw profiel (als je dat hebt ingevuld) om je te helpen.")
+
+    vacature = st.text_area("Plak hier de vacaturetekst:", height=220)
+
+    # 1 — Vacature uitleg in makkelijke taal
+    if st.button("1️⃣ Uitleg in makkelijke taal"):
+        if not vacature.strip():
+            st.warning("Plak eerst een vacaturetekst.")
+        else:
+            profiel_tekst = st.session_state.get("profiel", "")
+            with st.spinner("Ik leg de vacature simpel uit..."):
+                messages = [
+                    {
+                        "role": "system",
+                        "content": """
+Je bent AI Coach Buddy voor mensen met een LVB.
+- Schrijf op B1/A2 niveau.
+- Gebruik korte zinnen.
+- Gebruik bullets en kopjes.
+- Wees rustig, vriendelijk en duidelijk.
+"""
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
+Hier is (misschien) het profiel van de gebruiker:
+{profiel_tekst or 'Geen profiel ingevuld.'}
+
+Leg deze vacature uit in simpele taal voor deze persoon:
+
+{vacature}
+"""
+                    },
                 ]
-            )
-        uitleg = reply.choices[0].message.content
-        st.session_state["uitleg"] = uitleg
-        st.subheader("📘 Vacature in simpele taal")
-        st.write(uitleg)
 
-# 2 — Moeilijke woorden uitleggen
-if "uitleg" in st.session_state:
-    if st.button("2️⃣ Moeilijke woorden uitleggen"):
-        with st.spinner("Ik zoek moeilijke woorden..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "Leg moeilijke woorden super simpel uit."},
-                    {"role": "user", "content": f"Leg moeilijke woorden uit uit deze tekst:\n\n{st.session_state['uitleg']}"}
-                ]
-            )
-        st.subheader("📚 Moeilijke woorden uitgelegd")
-        st.write(reply.choices[0].message.content)
+                reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=messages,
+                )
 
-# 3 — Kleine stappen
-if "uitleg" in st.session_state:
-    if st.button("3️⃣ Kleine stappen (wat moet ik nu doen?)"):
-        with st.spinner("Ik maak kleine stappen..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "Maak max 5 simpele stappen voor LVB."},
-                    {"role": "user", "content": f"Maak 5 kleine stappen gebaseerd op deze vacature:\n\n{st.session_state['uitleg']}"}
-                ]
-            )
-        st.subheader("🪜 Kleine stappen")
-        st.write(reply.choices[0].message.content)
+            uitleg = reply.choices[0].message.content
+            st.session_state["uitleg"] = uitleg
+            st.subheader("📘 Vacature in simpele taal")
+            st.write(uitleg)
 
-# 4 — Motivatie & geruststelling
-if "uitleg" in st.session_state:
-    if st.button("4️⃣ Geef mij motivatie / geruststelling"):
-        with st.spinner("Even wat motivatie..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": """
-Je bent een vriendelijke coach.
-Geef motivatie, rust, geruststelling.
-Gebruik B1/A2 taal.
-"""},
-                    {"role": "user", "content": "Geef motivatie aan iemand met twijfel over werk zoeken."}
-                ]
-            )
-        st.subheader("💛 Motivatie en steun")
-        st.write(reply.choices[0].message.content)
+    # 2 — Moeilijke woorden uitleggen
+    if "uitleg" in st.session_state:
+        if st.button("2️⃣ Moeilijke woorden uitleggen"):
+            with st.spinner("Ik zoek moeilijke woorden..."):
+                reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "Je legt moeilijke woorden super simpel uit, 1 of 2 korte zinnen per woord."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Leg de moeilijke woorden uit uit deze tekst:\n\n{st.session_state['uitleg']}"
+                        },
+                    ],
+                )
+            st.subheader("📚 Moeilijke woorden uitgelegd")
+            st.write(reply.choices[0].message.content)
 
-# 5 — Werktempo & verwachtingen
-if "uitleg" in st.session_state:
-    if st.button("5️⃣ Werktempo & verwachtingen"):
-        with st.spinner("Ik leg het rustig uit..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system",
-                     "content": "Leg werktempo, pauzes, druk en begeleiding in simpele taal uit."},
-                    {"role": "user",
-                     "content": f"Leg het werktempo en verwachtingen uit voor deze functie:\n\n{st.session_state['uitleg']}"}
-                ]
-            )
-        st.subheader("⏱️ Werktempo & verwachtingen")
-        st.write(reply.choices[0].message.content)
+    # 3 — Kleine stappen
+    if "uitleg" in st.session_state:
+        if st.button("3️⃣ Kleine stappen (wat moet ik nu doen?)"):
+            profiel_tekst = st.session_state.get("profiel", "")
+            with st.spinner("Ik maak kleine stappen..."):
+                reply = client.chat_completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "Maak max 5 kleine, rustige stappen voor iemand met een LVB. Gebruik eenvoudige taal."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""
+Hier is het profiel van de gebruiker:
+{profiel_tekst or 'Geen profiel ingevuld.'}
 
-# 6 — Suggesties op basis van sterke punten
-if "uitleg" in st.session_state:
-    if st.button("6️⃣ Wat past bij mijn sterke punten?"):
-        with st.spinner("Ik kijk wat bij je past..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system",
-                     "content": "Koppel simpele sterke punten aan taken op werk. Simpele taal."},
-                    {"role": "user",
-                     "content": f"Koppel sterke punten aan simpele taken voor deze vacature:\n\n{st.session_state['uitleg']}"}
-                ]
-            )
-        st.subheader("💪 Wat past bij jou?")
-        st.write(reply.choices[0].message.content)
+Hier is de uitgelegde vacature:
+{st.session_state['uitleg']}
 
-# 7 — Zelf beslissen (zelfstandigheid stimuleren)
-if "uitleg" in st.session_state:
-    if st.button("7️⃣ Help mij kiezen (zelf beslissen)"):
-        with st.spinner("Ik help je kiezen..."):
-            reply = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system",
-                     "content": "Stimuleer zelfstandigheid. Geef opties. Laat gebruiker kiezen."},
-                    {"role": "user",
-                     "content": f"Help mij zelf kiezen over deze vacature:\n\n{st.session_state['uitleg']}"}
-                ]
-            )
-        st.subheader("🧭 Zelf beslissen")
-        st.write(reply.choices[0].message.content)
+Geef 3 tot 5 kleine stappen wat deze persoon nu kan doen.
+"""
+                        },
+                    ],
+                )
+            st.subheader("🪜 Kleine stappen")
+            st.write(reply.choices[0].message.content)
+
+    # 4 — Motivatie & geruststelling
+    if "uitleg" in st.session_state:
+        if st.button("4️⃣ Geef mij motivatie / geruststelling"):
+            profiel_tekst = st.session_state.get("profiel", "")
+            with st.spinner("Ik geef je wat motivatie..."):
+                reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """
+Je bent een rustige, bemoedigende coach.
+Je praat tegen iemand met een LVB.
+Gebruik B1/A2 taal, korte zinnen, positieve toon.
+"""
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""
+Hier is het profiel van de gebruiker:
+{profiel_tekst or 'Geen profiel ingevuld.'}
+
+Geef motivatie en geruststelling over werk zoeken en solliciteren.
+"""
+                        },
+                    ],
+                )
+            st.subheader("💛 Motivatie en steun")
+            st.write(reply.choices[0].message.content)
+
+    # 5 — Werktempo & verwachtingen
+    if "uitleg" in st.session_state:
+        if st.button("5️⃣ Werktempo & verwachtingen"):
+            profiel_tekst = st.session_state.get("profiel", "")
+            with st.spinner("Ik leg het werktempo rustig uit..."):
+                reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "Leg werktempo, pauzes, druk en begeleiding in simpele taal uit."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""
+Hier is het profiel van de gebruiker:
+{profiel_tekst or 'Geen profiel ingevuld.'}
+
+Leg het werktempo, verwachtingen en eventuele begeleiding uit voor deze functie:
+{st.session_state['uitleg']}
+"""
+                        },
+                    ],
+                )
+            st.subheader("⏱️ Werktempo & verwachtingen")
+            st.write(reply.choices[0].message.content)
+
+    # 6 — Wat past bij mijn sterke punten?
+    if "uitleg" in st.session_state:
+        if st.button("6️⃣ Wat past bij mijn sterke punten?"):
+            profiel_tekst = st.session_state.get("profiel", "")
+            with st.spinner("Ik kijk wat bij jou past..."):
+                reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """
+Je bent loopbaancoach voor iemand met een LVB.
+Je gebruikt het profiel van de persoon.
+Je legt uit welke taken en onderdelen van het werk het beste passen.
+Simpele taal. Duidelijke bullets.
+"""
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""
+Hier is het profiel van de gebruiker:
+{profiel_tekst or 'Geen profiel ingevuld.'}
+
+Hier is de eenvoudige uitleg van de vacature:
+{st.session_state['uitleg']}
+
+Leg uit:
+- Welke taken goed passen bij deze persoon
+- Welke dingen misschien lastig zijn
+- 1 korte conclusie: 'Dit lijkt wel/niet passend, want...'
+"""
+                        },
+                    ],
+                )
+            st.subheader("💪 Wat past bij jou?")
+            st.write(reply.choices[0].message.content)
+
+    # 7 — Zelf beslissen
+    if "uitleg" in st.session_state:
+        if st.button("7️⃣ Help mij kiezen (zelf beslissen)"):
+            profiel_tekst = st.session_state.get("profiel", "")
+            with st.spinner("Ik help je nadenken..."):
+                reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """
+Je stimuleert zelfstandigheid.
+Je neemt geen beslissing over.
+Je geeft opties en laat de persoon zelf kiezen.
+Simpele ja/nee-vragen en korte uitleg.
+"""
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""
+Hier is het profiel van de gebruiker:
+{profiel_tekst or 'Geen profiel ingevuld.'}
+
+Hier is de uitleg van de vacature:
+{st.session_state['uitleg']}
+
+Help de persoon na te denken:
+- Stel 3 tot 5 eenvoudige vragen (ja/nee)
+- Geef daarna 2 opties: 'Wel solliciteren' / 'Nog even nadenken'
+- Laat duidelijk zien: 'Jij beslist. Ik help je alleen nadenken.'
+"""
+                        },
+                    ],
+                )
+            st.subheader("🧭 Zelf beslissen")
+            st.write(reply.choices[0].message.content)
 
 st.write("---")
 st.caption("Gemaakt door Nahom • AI Coach Buddy voor LVB-jongeren")
+
 
