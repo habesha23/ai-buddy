@@ -106,14 +106,49 @@ with tab_vacature:
 
     vacature = st.text_area("Plak hier de vacaturetekst:", height=220)
 
-    # 0 — Matchcheck: Past deze vacature bij mij?
+        # 0 — Matchcheck: Past deze vacature bij mij?
     if st.button("0️⃣ Past deze vacature bij mij?"):
         if not vacature.strip():
             st.warning("Plak eerst een vacaturetekst.")
+        elif not st.session_state.get("profiel"):
+            st.warning("Vul eerst jouw profiel in bij het tabblad '🧍 Jouw profiel'. Dan kan ik beter inschatten of de vacature bij je past.")
         else:
-            profiel_tekst = st.session_state.get("profiel", "")
+            profiel_tekst = st.session_state["profiel"]
             with st.spinner("Ik kijk of deze baan bij jou past..."):
                 reply = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """
+Je bent een loopbaancoach voor iemand met een LVB.
+Je krijgt een profiel + vacature.
+Je geeft een match-score en advies.
+
+LET OP: geef ALTIJD exact dit formaat terug:
+<score tussen 0 en 100>|||<advies in gewone tekst>
+
+Voorbeeld:
+75|||Deze baan past best goed bij je. Je sterke punten X en Y passen bij de taken...
+
+Gebruik B1/B2 taal in het advies.
+"""
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""
+Profiel van de gebruiker:
+{profiel_tekst}
+
+Vacaturetekst:
+{vacature}
+
+Geef een match-score tussen 0 en 100 en een kort advies.
+"""
+                        },
+                    ],
+                )
+
                     model="gpt-4o-mini",
                     messages=[
                         {
