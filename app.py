@@ -106,7 +106,7 @@ with tab_vacature:
 
     vacature = st.text_area("Plak hier de vacaturetekst:", height=220)
 
-        # 0 — Matchcheck: Past deze vacature bij mij?
+    # 0 — Matchcheck: Past deze vacature bij mij?
     if st.button("0️⃣ Past deze vacature bij mij?"):
         if not vacature.strip():
             st.warning("Plak eerst een vacaturetekst.")
@@ -149,39 +149,6 @@ Geef een match-score tussen 0 en 100 en een kort advies.
                     ],
                 )
 
-                    model="gpt-4o-mini",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": """
-Je bent een loopbaancoach voor iemand met een LVB.
-Je krijgt een profiel + vacature.
-Je geeft een match-score en advies.
-
-LET OP: geef ALTIJD exact dit formaat terug:
-<score tussen 0 en 100>|||<advies in gewone tekst>
-
-Voorbeeld:
-75|||Deze baan past best goed bij je. Je sterke punten X en Y passen bij de taken...
-
-Gebruik B1/B2 taal in het advies.
-"""
-                        },
-                        {
-                            "role": "user",
-                            "content": f"""
-Profiel van de gebruiker:
-{profiel_tekst or 'Geen profiel ingevuld.'}
-
-Vacaturetekst:
-{vacature}
-
-Geef een match-score tussen 0 en 100 en een kort advies.
-"""
-                        },
-                    ],
-                )
-
             raw = reply.choices[0].message.content.strip()
             score = None
             advice = raw
@@ -196,8 +163,7 @@ Geef een match-score tussen 0 en 100 en een kort advies.
             st.subheader("🧭 Match met jouw profiel")
 
             if score is not None:
-                # Clamp score tussen 0 en 100
-                score = max(0, min(100, score))
+                score = max(0, min(100, score))  # clamp 0–100
                 st.write(f"**Score:** {score} / 100")
                 st.progress(score / 100)
 
@@ -465,9 +431,4 @@ Profiel:
 
 st.write("---")
 st.caption("Gemaakt door Nahom • AI Coach Buddy voor LVB-jongeren")
-
-
-st.write("---")
-st.caption("Gemaakt door Nahom • AI Coach Buddy voor LVB-jongeren")
-
 
